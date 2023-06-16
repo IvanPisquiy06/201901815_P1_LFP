@@ -6,11 +6,11 @@ import graphviz
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
-from reportlab.platypus import Image
+from PIL import ImageTk, Image
 
 contenido_texto = None
 
-def reporte_afn():
+def reporte():
     global contenido_texto
 
     if contenido_texto:
@@ -70,6 +70,8 @@ def reporte_afn():
 
         # Guardar y cerrar el PDF
         c.save()
+    else:
+        messagebox.showinfo("Error", "No hay información para procesar")
 
 def carga_masiva():
 
@@ -201,13 +203,21 @@ def menu_afn():
 
     #Ventana que despliega información de un autómata AFN
     def ayuda_afn():
+
         info_afn = Tk()
         info_afn.title("Ayuda")
 
         window = ttk.Frame(info_afn, padding=50)
         window.grid()
 
+        info = "Un autómata finito no determinista (AFN) es un modelo matemático utilizado en el campo de la teoría de autómatas y lenguajes formales."
+        info2 = "Es una variante del autómata finito (AF) que permite transiciones no deterministas,"
+        info3 = "lo que significa que en un estado dado puede haber múltiples transiciones posibles para un símbolo de entrada determinado."
+
         ttk.Label(window, text="¿Qué es un Autómata AFN?").grid()
+        ttk.Label(window, text=info).grid()
+        ttk.Label(window, text=info2).grid()
+        ttk.Label(window, text=info3).grid()
 
         ttk.Button(window, text="Cerrar", command=info_afn.destroy).grid(pady=10)
 
@@ -223,8 +233,133 @@ def menu_afn():
 
     ttk.Button(window, text="Crear AFN", command=crear_afn).grid(column=0, row=2, padx=20, pady=10)
     ttk.Button(window, text="Evaluar Cadena", command=evaluar_afn).grid(column=1, row=2, padx=20, pady=10)
-    ttk.Button(window, text="Generar Reporte AFN", command=reporte_afn).grid(column=0, row=3, padx=20, pady=10)
+    ttk.Button(window, text="Generar Reporte AFN", command=reporte).grid(column=0, row=3, padx=20, pady=10)
     ttk.Button(window, text="Ayuda", command=ayuda_afn).grid(column=1, row=3, padx=20, pady=10)
+    ttk.Button(window, text="Cerrar", command=main_afn.destroy).grid(column=0, row=4, padx=20, pady=10)
+
+def menu_afd():
+    global contenido_texto
+
+    #Funcion para crear un archivo AFN
+    def crear_afd():
+
+        main_afn.destroy()
+
+        def guardar_datos_afd():
+
+            nombre = entry_nombre.get()
+            estados = entry_estados.get()
+            alfabeto = entry_alfabeto.get()
+            inicial = entry_inicial.get()
+            aceptados = entry_aceptados.get()
+            transiciones = entry_transiciones.get().split(' ')
+
+            contenido = f"{nombre}\n"
+            contenido += f"{estados}\n"
+            contenido += f"{alfabeto}\n"
+            contenido += f"{inicial}\n"
+            contenido += f"{aceptados}\n"
+            for transicion in transiciones:
+                contenido += f"{transicion}\n"
+
+            nombre_archivo = f"{nombre}.afd"
+
+            file = open(nombre_archivo, 'w')
+            file.write(contenido)
+            file.close()
+
+            create_afn.destroy()
+
+            messagebox.showinfo("¡Éxito!", "Datos guardados correctamente")
+
+        create_afn = Tk()
+        create_afn.title("Crear AFD")
+
+        window = ttk.Frame(create_afn, padding=50)
+        window.grid()
+
+        ttk.Label(window, text="Creando AFD (LLenar los siguientes campos)").grid(column=0, row=0)
+
+        # Etiqueta y campo de entrada para el Nombre
+        ttk.Label(window, text="Nombre:").grid(column=0, row=1)
+        entry_nombre = ttk.Entry(window)
+        entry_nombre.grid(column=1, row=1)
+
+        # Etiqueta y campo de entrada para los Estados
+        ttk.Label(window, text="Estados:").grid(column=0, row=2)
+        entry_estados = ttk.Entry(window)
+        entry_estados.grid(column=1, row=2)
+
+        # Etiqueta y campo de entrada para el Alfabeto
+        ttk.Label(window, text="Alfabeto:").grid(column=0, row=3)
+        entry_alfabeto = ttk.Entry(window)
+        entry_alfabeto.grid(column=1, row=3)
+
+        # Etiqueta y campo de entrada para el Estado Inicial
+        ttk.Label(window, text="Estado Inicial:").grid(column=0, row=4)
+        entry_inicial = ttk.Entry(window)
+        entry_inicial.grid(column=1, row=4)
+
+        # Etiqueta y campo de entrada para los Estados de Aceptación
+        ttk.Label(window, text="Estados de Aceptación:").grid(column=0, row=5)
+        entry_aceptados = ttk.Entry(window)
+        entry_aceptados.grid(column=1, row=5)
+
+        # Etiqueta y campo de entrada para las Transiciones
+        ttk.Label(window, text="Transiciones:").grid(column=0, row=6)
+        entry_transiciones = ttk.Entry(window)
+        entry_transiciones.grid(column=1, row=6)
+
+        ttk.Button(window, text="Aceptar", command=guardar_datos_afd).grid(column=0, row=7, padx=20, pady=10)
+        ttk.Button(window, text="Cerrar", command=create_afn.destroy).grid(column=1, row=7, padx=20, pady=10)
+
+    def evaluar_afd():
+        main_afn.destroy()
+
+        main_evaluar = Tk()
+        main_evaluar.title("Evaluar Cadena")
+
+        window = ttk.Frame(main_evaluar, padding=50)
+        window.grid()
+
+        ttk.Label(window, text="Seleccione una de las siguientes").grid()
+
+        ttk.Button(window, text="Solo Evaluar").grid(pady=10)
+        ttk.Button(window, text="Ruta").grid(pady=10)
+        ttk.Button(window, text="Cerrar", command=main_evaluar.destroy).grid(pady=10)
+
+    #Ventana que despliega información de un autómata AFN
+    def ayuda_afd():
+
+        info_afn = Tk()
+        info_afn.title("Ayuda")
+
+        window = ttk.Frame(info_afn, padding=50)
+        window.grid()
+
+        info = "Un autómata AFD (Autómata Finito Determinista) es un modelo matemático utilizado en el campo de la teoría de autómatas y lenguajes formales."
+        info2 = "Es una variante del autómata finito (AF) que sigue un conjunto de reglas estrictas y deterministas para su funcionamiento."
+
+        ttk.Label(window, text="¿Qué es un Autómata AFD?").grid()
+        ttk.Label(window, text=info).grid()
+        ttk.Label(window, text=info2).grid()
+
+        ttk.Button(window, text="Cerrar", command=info_afn.destroy).grid(pady=10)
+
+    main_afn = Tk()
+    main_afn.title("Menu AFD")
+
+    window = ttk.Frame(main_afn, padding=50)
+    window.grid()
+
+    ttk.Label(window, text="Sección: A").grid(column=0, row=0)
+    ttk.Label(window, text="Carné: 201901815").grid(column=1, row=0)
+    ttk.Label(window, text="Ivan de Jesus Pisquiy Escobar").grid(column=0, row=1)
+
+    ttk.Button(window, text="Crear AFD", command=crear_afd).grid(column=0, row=2, padx=20, pady=10)
+    ttk.Button(window, text="Evaluar Cadena", command=evaluar_afd).grid(column=1, row=2, padx=20, pady=10)
+    ttk.Button(window, text="Generar Reporte AFD", command=reporte).grid(column=0, row=3, padx=20, pady=10)
+    ttk.Button(window, text="Ayuda", command=ayuda_afd).grid(column=1, row=3, padx=20, pady=10)
     ttk.Button(window, text="Cerrar", command=main_afn.destroy).grid(column=0, row=4, padx=20, pady=10)
 
 #Ventana principal
@@ -241,7 +376,7 @@ def main_window():
     ttk.Label(window, text="Ivan de Jesus Pisquiy Escobar").grid(column=1, row=1)
 
     ttk.Button(window, text="AFN", command=menu_afn).grid(column=0, row=4, padx=20, pady=10)
-    ttk.Button(window, text="AFD").grid(column=1, row=4, padx=20, pady=10)
+    ttk.Button(window, text="AFD", command=menu_afd).grid(column=1, row=4, padx=20, pady=10)
     ttk.Button(window, text="OE").grid(column=0, row=5, padx=20, pady=10)
     ttk.Button(window, text="Carga Masiva", command=carga_masiva).grid(column=1, row=5, padx=20, pady=10)
     ttk.Button(window, text="Cerrar", command=main.quit).grid(column=0, row=6, padx=20, pady=10)
