@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import filedialog
 from tkinter import ttk
 from tkinter import messagebox
+import os
 import graphviz
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -13,38 +14,53 @@ contenido_texto = None
 def reporte():
     global contenido_texto
 
-    if contenido_texto:
+    lineas = contenido_texto.splitlines()
+    nombres = []
 
-        lineas = contenido_texto.splitlines()
+    grupos = []
+    grupo_actual = []
 
-        grupos = []
-        grupo_actual = []
-
-        for elemento in lineas:
-            if elemento == "%":
-                grupos.append(grupo_actual)
-                grupo_actual = []
-            else:
-                grupo_actual.append(elemento)
-
-        if grupo_actual:
+    for elemento in lineas:
+        if elemento == "%":
             grupos.append(grupo_actual)
+            grupo_actual = []
+        else:
+            grupo_actual.append(elemento)
 
-        nombre = grupos[0][0]
-        estados = grupos[0][1].split(',')
-        alfabetos = grupos[0][2].split(',')
-        inicial = grupos[0][3]
-        aceptacion = grupos[0][4]
-        transiciones = grupos[0][5:]
+    for i in range(len(grupos)):
+        nombres.append(grupos[i][0])
+
+    def crear_reporte():
+
+        automata = combobox.current()
+
+        nombre = grupos[automata][0]
+        estados = grupos[automata][1].split(',')
+        alfabetos = grupos[automata][2].split(',')
+        inicial = grupos[automata][3]
+        aceptacion = grupos[automata][4]
+        transiciones = grupos[automata][5:]
 
         grafica = graphviz.Digraph(format='png')
+        conexiones = {}
         
-        for i in range(len(estados)):
-            grafica.node(estados[i], fillcolor='yellow')
+        for j in range(len(estados)):
+            grafica.node(estados[j], color='yellow')
         for transicion in transiciones:
             fase = transicion.split(';')
             inicial = fase[0].split(',')
-            grafica.edge(inicial[0], fase[1], label=inicial[1])
+            if (inicial[0], fase[1]) in conexiones:
+                # Agregar el label al conector existente
+                conexiones[(inicial[0], fase[1])]['label'] += f",{inicial[1]}"
+            else:
+                # Crear un nuevo conector
+                conexiones[(inicial[0], fase[1])] = {'label': inicial[1]}
+
+        # Agregar los conectores al gráfico
+        for conexion, atributos in conexiones.items():
+            origen, destino = conexion
+            label = atributos['label']
+            grafica.edge(origen, destino, label=label)
 
         archivo = f'{nombre}'
         grafica.render(archivo, cleanup=True)
@@ -54,10 +70,10 @@ def reporte():
 
         # Agregar texto al PDF
         c.drawString(3.5 * inch, 10 * inch, f'Nombre: {nombre}')
-        c.drawString(1 * inch, 9.5 * inch, f'Estados: {grupos[0][1]}')
-        c.drawString(1 * inch, 9.25 * inch, f'Alfabeto: {grupos[0][2]}')
+        c.drawString(1 * inch, 9.5 * inch, f'Estados: {grupos[i][1]}')
+        c.drawString(1 * inch, 9.25 * inch, f'Alfabeto: {grupos[i][2]}')
         c.drawString(1 * inch, 9 * inch, f'Estados de aceptación: {aceptacion}')
-        c.drawString(1 * inch, 8.5 * inch, f'Estados inicial: {grupos[0][3]}')
+        c.drawString(1 * inch, 8.5 * inch, f'Estados inicial: {grupos[i][3]}')
         c.drawString(1 * inch, 8 * inch, 'Transiciones:')
         y = 7.75
         for transicion in transiciones:
@@ -70,8 +86,22 @@ def reporte():
 
         # Guardar y cerrar el PDF
         c.save()
-    else:
-        messagebox.showinfo("Error", "No hay información para procesar")
+
+        messagebox.showinfo("¡Éxito!", "Reporte creado correctamente")
+        main_reporte.destroy()
+
+    main_reporte = Tk()
+    main_reporte.title("Menú reporte")
+
+    window = ttk.Frame(main_reporte, padding=50)
+    window.grid()
+
+    ttk.Label(window, text="Elija un autómata disponible para crear reporte").grid()
+
+    combobox = ttk.Combobox(window, values=nombres)
+    combobox.current(0)  # Establecer el valor predeterminado
+    combobox.grid()
+    ttk.Button(window, text="Crear Reporte", command=crear_reporte).grid()
 
 def carga_masiva():
 
@@ -362,6 +392,50 @@ def menu_afd():
     ttk.Button(window, text="Ayuda", command=ayuda_afd).grid(column=1, row=3, padx=20, pady=10)
     ttk.Button(window, text="Cerrar", command=main_afn.destroy).grid(column=0, row=4, padx=20, pady=10)
 
+def menu_oe():
+
+    def minimizar():
+        global contenido_texto
+        main_oe.destroy
+        main_minimizar = Tk()
+        main_minimizar.title("OE")
+
+        window = ttk.Frame(window, padding=50)
+        window.grid()
+
+        ttk.Label(window, text="Llenar los siguientes campos")
+
+
+
+    def ayuda_oe():
+
+        info_afn = Tk()
+        info_afn.title("Ayuda")
+
+        window = ttk.Frame(info_afn, padding=50)
+        window.grid()
+
+        info = "se refiere a reducir una gramática regular a su forma más simple o compacta."
+        info2 = "El objetivo de la minimización es eliminar cualquier redundancia o información innecesaria en la gramática."
+
+        ttk.Label(window, text="¿Qué es un Modulo OE?").grid()
+        ttk.Label(window, text=info).grid()
+        ttk.Label(window, text=info2).grid()
+
+        ttk.Button(window, text="Cerrar", command=info_afn.destroy).grid(pady=10)
+
+    main_oe = Tk()
+    main_oe.title("Menu OE")
+
+    window = ttk.Frame(main_oe, padding=50)
+    window.grid()
+
+    ttk.Label(window, text="Elija una opción a continuación").grid(pady=20)
+    ttk.Button(window, text="Seleccionar AFD").grid(pady=10)
+    ttk.Button(window, text="Generar reporte OE").grid(pady=10)
+    ttk.Button(window, text="Ayuda", command=ayuda_oe).grid(pady=10)
+    ttk.Button(window, text="Cerrar", command=main_oe.destroy).grid(pady=10)
+
 #Ventana principal
 def main_window():
     main = Tk()
@@ -377,7 +451,7 @@ def main_window():
 
     ttk.Button(window, text="AFN", command=menu_afn).grid(column=0, row=4, padx=20, pady=10)
     ttk.Button(window, text="AFD", command=menu_afd).grid(column=1, row=4, padx=20, pady=10)
-    ttk.Button(window, text="OE").grid(column=0, row=5, padx=20, pady=10)
+    ttk.Button(window, text="OE", command=menu_oe).grid(column=0, row=5, padx=20, pady=10)
     ttk.Button(window, text="Carga Masiva", command=carga_masiva).grid(column=1, row=5, padx=20, pady=10)
     ttk.Button(window, text="Cerrar", command=main.quit).grid(column=0, row=6, padx=20, pady=10)
     main.mainloop()
