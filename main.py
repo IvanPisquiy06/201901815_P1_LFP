@@ -405,8 +405,6 @@ def menu_oe():
 
         ttk.Label(window, text="Llenar los siguientes campos")
 
-
-
     def ayuda_oe():
 
         info_afn = Tk()
