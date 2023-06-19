@@ -546,13 +546,109 @@ def menu_oe():
     def minimizar():
         global contenido_texto
         main_oe.destroy
+        lineas = contenido_texto.splitlines()
+        nombres = []
+
+        grupos = []
+        grupo_actual = []
+
+        for elemento in lineas:
+            if elemento == "%":
+                grupos.append(grupo_actual)
+                grupo_actual = []
+            else:
+                grupo_actual.append(elemento)
+
+        for i in range(len(grupos)):
+            nombres.append(grupos[i][0])
+
+        def minimizar_afd():
+
+            automata = combobox.current()
+
+            nombre_optimizado = entry_nombre.get()
+            nombre = grupos[automata][0]
+            estados = grupos[automata][1].split(',')
+            alfabeto = grupos[automata][2].split(',')
+            estado_inicial = grupos[automata][3]
+            estados_aceptacion = grupos[automata][4]
+            transiciones = grupos[automata][5:]
+
+            main_minimizar.destroy()
+
+            # Paso 1: Encontrar estados equivalentes
+            grupos_equivalentes = []
+            estados_no_aceptacion = [estado for estado in estados if estado not in estados_aceptacion]
+            grupos_equivalentes.append(estados_aceptacion)
+            grupos_equivalentes.append(estados_no_aceptacion)
+
+            estados_equivalentes_actualizados = True
+            while estados_equivalentes_actualizados:
+                nuevos_grupos_equivalentes = []
+                for grupo in grupos_equivalentes:
+                    nuevos_grupos = []
+                    for estado in grupo:
+                        encontrado = False
+                        for nuevo_grupo in nuevos_grupos:
+                            # Verificar si el estado es equivalente a algún estado del nuevo grupo
+                            if all(transiciones[estado][i] == transiciones[nuevo_grupo[0]][i] for i in range(len(alfabeto))):
+                                encontrado = True
+                                nuevo_grupo.append(estado)
+                                break
+                        if not encontrado:
+                            nuevos_grupos.append([estado])
+                    nuevos_grupos_equivalentes.extend(nuevos_grupos)
+                if len(nuevos_grupos_equivalentes) == len(grupos_equivalentes):
+                    estados_equivalentes_actualizados = False
+                grupos_equivalentes = nuevos_grupos_equivalentes
+
+            # Paso 2: Anular estados equivalentes y actualizar la tabla de transiciones
+            estados_minimizados = []
+            transiciones_minimizadas = {}
+            for grupo in grupos_equivalentes:
+                estado_minimizado = grupo[0]
+                estados_minimizados.append(estado_minimizado)
+                for estado in grupo[1:]:
+                    transiciones_minimizadas[estado] = estado_minimizado
+
+            # Paso 3: Actualizar los estados de aceptación y la tabla de transiciones
+            estados_aceptacion_minimizados = [estado for estado in estados_aceptacion if estado in estados_minimizados]
+            estado_inicial_minimizado = transiciones_minimizadas[estado_inicial] if estado_inicial in transiciones_minimizadas else None
+            for estado_origen, transiciones_origen in transiciones.items():
+                transiciones_minimizadas[estado_origen] = {simbolo: transiciones_minimizadas.get(estado_destino) for simbolo, estado_destino in transiciones_origen.items()}
+
+            contenido = f"{nombre_optimizado}\n"
+            contenido += f"{estados_minimizados}\n"
+            contenido += f"{alfabeto}\n"
+            contenido += f"{estado_inicial_minimizado}\n"
+            contenido += f"{estados_aceptacion_minimizados}\n"
+            for transicion in transiciones_minimizadas:
+                contenido += f"{transicion}\n"
+
+            nombre_archivo = f"{nombre_optimizado}.afd"
+
+            file = open(nombre_archivo, 'w')
+            file.write(contenido)
+            file.close()
+        
         main_minimizar = Tk()
         main_minimizar.title("OE")
 
-        window = ttk.Frame(window, padding=50)
+        window = ttk.Frame(main_minimizar, padding=50)
         window.grid()
 
         ttk.Label(window, text="Llenar los siguientes campos")
+
+        combobox = ttk.Combobox(window, values=nombres)
+        combobox.current(0)
+        combobox.grid()
+
+        # Etiqueta y campo de entrada para el Nombre
+        ttk.Label(window, text="Nombre").grid()
+        entry_nombre = ttk.Entry(window)
+        entry_nombre.grid()
+
+        ttk.Button(window, text="Optimizar", command=minimizar_afd).grid()
 
     def ayuda_oe():
 
@@ -578,7 +674,7 @@ def menu_oe():
     window.grid()
 
     ttk.Label(window, text="Elija una opción a continuación").grid(pady=20)
-    ttk.Button(window, text="Seleccionar AFD").grid(pady=10)
+    ttk.Button(window, text="Seleccionar AFD", command=minimizar).grid(pady=10)
     ttk.Button(window, text="Generar reporte OE").grid(pady=10)
     ttk.Button(window, text="Ayuda", command=ayuda_oe).grid(pady=10)
     ttk.Button(window, text="Cerrar", command=main_oe.destroy).grid(pady=10)
