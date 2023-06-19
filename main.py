@@ -11,6 +11,65 @@ from PIL import ImageTk, Image
 
 contenido_texto = None
 
+def validar_cadena(cadena, automata):
+    global contenido_texto
+    lineas = contenido_texto.splitlines()
+
+    nombres = []
+
+    grupos = []
+    grupo_actual = []
+
+    for elemento in lineas:
+        if elemento == "%":
+            grupos.append(grupo_actual)
+            grupo_actual = []
+        else:
+            grupo_actual.append(elemento)
+
+    for i in range(len(grupos)):
+        nombres.append(grupos[i][0])
+
+    # Obtener la información del archivo AFN
+    estados = grupos[automata][1].strip().split(',')
+    alfabeto = grupos[automata][2].strip().split(',')
+    estado_inicial = grupos[automata][3].strip()
+    estados_aceptacion = grupos[automata][4].strip().split(',')
+    transiciones = grupos[automata][5:]
+    for transicion in transiciones:
+            fase = transicion.split(';')
+            inicial = fase[0].split(',')
+
+    # Función recursiva para realizar la validación
+    def validar_rec(estado_actual, subcadena):
+        # Caso base: no quedan símbolos en la subcadena
+        if len(subcadena) == 0:
+            # Verificar si el estado actual es un estado de aceptación
+            if estado_actual in estados_aceptacion:
+                return messagebox.showinfo("¡Éxito!", "La cadena ingresada es válida")
+            else:
+                return messagebox.showinfo("¡Lo siento!", "La cadena ingresada no es válida")
+
+        # Caso recursivo: buscar transiciones para el símbolo actual
+        simbolo_actual = subcadena[0]
+        subcadena_restante = subcadena[1:]
+        for transicion in transiciones:
+            fase = transicion.split(';')
+            inicial = fase[0].split(',')
+            estado_origen = inicial[0]
+            simbolo = inicial[1]
+            estado_destino = fase[1]
+            if estado_origen == estado_actual and simbolo == simbolo_actual:
+                # Realizar transición y continuar con la validación recursiva
+                if validar_rec(estado_destino, subcadena_restante):
+                    return messagebox.showinfo("¡Éxito!", "La cadena ingresada es válida")
+
+        # No se encontró ninguna transición válida para el símbolo actual
+        return messagebox.showinfo("¡Lo siento!", "La cadena ingresada no es válida")
+
+    # Iniciar la validación recursiva desde el estado inicial
+    return validar_rec(estado_inicial, cadena)
+
 def reporte():
     global contenido_texto
 
@@ -42,10 +101,11 @@ def reporte():
         transiciones = grupos[automata][5:]
 
         grafica = graphviz.Digraph(format='png')
+        grafica.graph_attr['size'] = '5,4'
         conexiones = {}
         
         for j in range(len(estados)):
-            grafica.node(estados[j], color='yellow')
+            grafica.node(estados[j], color='red')
         for transicion in transiciones:
             fase = transicion.split(';')
             inicial = fase[0].split(',')
@@ -99,7 +159,7 @@ def reporte():
     ttk.Label(window, text="Elija un autómata disponible para crear reporte").grid()
 
     combobox = ttk.Combobox(window, values=nombres)
-    combobox.current(0)  # Establecer el valor predeterminado
+    combobox.current(0)
     combobox.grid()
     ttk.Button(window, text="Crear Reporte", command=crear_reporte).grid()
 
@@ -217,19 +277,64 @@ def menu_afn():
         ttk.Button(window, text="Cerrar", command=create_afn.destroy).grid(column=1, row=7, padx=20, pady=10)
 
     def evaluar_afn():
-        main_afn.destroy()
 
-        main_evaluar = Tk()
-        main_evaluar.title("Evaluar Cadena")
+        global contenido_texto
 
-        window = ttk.Frame(main_evaluar, padding=50)
+        lineas = contenido_texto.splitlines()
+        nombres = []
+
+        grupos = []
+        grupo_actual = []
+
+        for elemento in lineas:
+            if elemento == "%":
+                grupos.append(grupo_actual)
+                grupo_actual = []
+            else:
+                grupo_actual.append(elemento)
+
+        for i in range(len(grupos)):
+            nombres.append(grupos[i][0])
+
+        def sub_evaluar():
+            cadena = entry_cadena.get()
+            automata = combobox.current()
+
+            def validar_cadena_aux():
+                validar_cadena(cadena, automata)
+
+            main_evaluar = Tk()
+            main_evaluar.title("Evaluar Cadena")
+
+            window = ttk.Frame(main_evaluar, padding=50)
+            window.grid()
+
+            ttk.Label(window, text="Seleccione una de las siguientes").grid()
+
+            ttk.Button(window, text="Solo Evaluar", command=validar_cadena_aux).grid(pady=10)
+            ttk.Button(window, text="Ruta").grid(pady=10)
+            ttk.Button(window, text="Cerrar", command=main_evaluar.destroy).grid(pady=10)
+            cadena_afn.destroy()
+
+        cadena_afn = Tk()
+        cadena_afn.title("Evaluar AFN")
+
+        window = ttk.Frame(cadena_afn, padding=50)
         window.grid()
 
-        ttk.Label(window, text="Seleccione una de las siguientes").grid()
+        ttk.Label(window, text="Ingrese una cadena a evaluar").grid()
 
-        ttk.Button(window, text="Solo Evaluar").grid(pady=10)
-        ttk.Button(window, text="Ruta").grid(pady=10)
-        ttk.Button(window, text="Cerrar", command=main_evaluar.destroy).grid(pady=10)
+        combobox = ttk.Combobox(window, values=nombres)
+        combobox.current(0)
+        combobox.grid()
+
+        # Etiqueta y campo de entrada para el Nombre
+        ttk.Label(window, text="Cadena").grid()
+        entry_cadena = ttk.Entry(window)
+        entry_cadena.grid()
+
+        ttk.Button(window, text="Siguiente", command=sub_evaluar).grid()
+        
 
     #Ventana que despliega información de un autómata AFN
     def ayuda_afn():
@@ -344,19 +449,63 @@ def menu_afd():
         ttk.Button(window, text="Cerrar", command=create_afn.destroy).grid(column=1, row=7, padx=20, pady=10)
 
     def evaluar_afd():
-        main_afn.destroy()
 
-        main_evaluar = Tk()
-        main_evaluar.title("Evaluar Cadena")
+        global contenido_texto
 
-        window = ttk.Frame(main_evaluar, padding=50)
+        lineas = contenido_texto.splitlines()
+        nombres = []
+
+        grupos = []
+        grupo_actual = []
+
+        for elemento in lineas:
+            if elemento == "%":
+                grupos.append(grupo_actual)
+                grupo_actual = []
+            else:
+                grupo_actual.append(elemento)
+
+        for i in range(len(grupos)):
+            nombres.append(grupos[i][0])
+
+        def sub_evaluar():
+            cadena = entry_cadena.get()
+            automata = combobox.current()
+
+            def validar_cadena_aux():
+                validar_cadena(cadena, automata)
+
+            main_evaluar = Tk()
+            main_evaluar.title("Evaluar Cadena")
+
+            window = ttk.Frame(main_evaluar, padding=50)
+            window.grid()
+
+            ttk.Label(window, text="Seleccione una de las siguientes").grid()
+
+            ttk.Button(window, text="Solo Evaluar", command=validar_cadena_aux).grid(pady=10)
+            ttk.Button(window, text="Ruta").grid(pady=10)
+            ttk.Button(window, text="Cerrar", command=main_evaluar.destroy).grid(pady=10)
+            cadena_afn.destroy()
+
+        cadena_afn = Tk()
+        cadena_afn.title("Evaluar AFD")
+
+        window = ttk.Frame(cadena_afn, padding=50)
         window.grid()
 
-        ttk.Label(window, text="Seleccione una de las siguientes").grid()
+        ttk.Label(window, text="Ingrese una cadena a evaluar").grid()
 
-        ttk.Button(window, text="Solo Evaluar").grid(pady=10)
-        ttk.Button(window, text="Ruta").grid(pady=10)
-        ttk.Button(window, text="Cerrar", command=main_evaluar.destroy).grid(pady=10)
+        combobox = ttk.Combobox(window, values=nombres)
+        combobox.current(0)
+        combobox.grid()
+
+        # Etiqueta y campo de entrada para el Nombre
+        ttk.Label(window, text="Cadena").grid()
+        entry_cadena = ttk.Entry(window)
+        entry_cadena.grid()
+
+        ttk.Button(window, text="Siguiente", command=sub_evaluar).grid()
 
     #Ventana que despliega información de un autómata AFN
     def ayuda_afd():
